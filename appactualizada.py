@@ -122,8 +122,8 @@ def generar_etiquetas_pdf(
                 offset += int(line_spacing)
             # QR opcional
             if incluir_qr and qr_size > 0:
-                # Concatenar todo el contenido de la etiqueta
-                contenido_qr = "\n".join(lineas_reemplazadas)
+                # Concatenar todo el contenido de la etiqueta en UNA sola línea
+                contenido_qr = " | ".join(lineas_reemplazadas)
                 qr_code = qr.QrCodeWidget(contenido_qr)
                 bounds = qr_code.getBounds()
                 qr_w = bounds[2] - bounds[0]
