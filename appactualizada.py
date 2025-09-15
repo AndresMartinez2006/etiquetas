@@ -1,5 +1,6 @@
 import io
 import re
+import urllib.parse
 from datetime import datetime
 
 import streamlit as st
@@ -116,14 +117,20 @@ def generar_etiquetas_pdf(
             # Texto
             c.setFont("Helvetica", int(font_size))
             offset = 10
-            lineas_reemplazadas = [ln.replace("{SERIAL}", serial_actual) for ln in lineas]
-            for t in lineas_reemplazadas:
+            for t in (ln.replace("{SERIAL}", serial_actual) for ln in lineas):
                 c.drawString(x + padding_interno, y + etiqueta_h - offset, t)
                 offset += int(line_spacing)
             # QR opcional
             if incluir_qr and qr_size > 0:
-                # Concatenar todo el contenido de la etiqueta en UNA sola línea
-                contenido_qr = " | ".join(lineas_reemplazadas)
+                # Crear HTML embebido con toda la info
+                lineas_reemplazadas = [ln.replace("{SERIAL}", serial_actual) for ln in lineas]
+                html_content = "<html><body><h3>Etiqueta</h3>" + "".join(
+                    f"<p>{ln}</p>" for ln in lineas_reemplazadas
+                ) + "</body></html>"
+
+                # Codificar en formato URL para que iPhone lo abra
+                contenido_qr = "data:text/html," + urllib.parse.quote(html_content)
+
                 qr_code = qr.QrCodeWidget(contenido_qr)
                 bounds = qr_code.getBounds()
                 qr_w = bounds[2] - bounds[0]
@@ -182,5 +189,3 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
-
-
