@@ -122,9 +122,9 @@ def generar_etiquetas_pdf(
 
             # QR opcional
             if incluir_qr and qr_size > 0:
-                # Texto plano con la info de la etiqueta (más compatible con cualquier lector)
+                # Texto plano compatible con iPhone (sin saltos de línea)
                 lineas_reemplazadas = [ln.replace("{SERIAL}", serial_actual) for ln in lineas]
-                contenido_qr = "\n".join(lineas_reemplazadas)
+                contenido_qr = " | ".join(lineas_reemplazadas)
 
                 qr_code = qr.QrCodeWidget(contenido_qr)
                 bounds = qr_code.getBounds()
@@ -148,12 +148,14 @@ def generar_etiquetas_pdf(
     buffer.seek(0)
     return buffer
 
+# --- Calcular cuántas caben por página ---
 width_px, height_px = page_size
 cols = max(1, int((width_px - margen_x_mm * mm) // (etiqueta_width_mm * mm + margen_x_mm * mm)))
 rows = max(1, int((height_px - margen_y_mm * mm) // (etiqueta_height_mm * mm + margen_y_mm * mm)))
 por_pagina = cols * rows
 st.info(f"Est. por página: **{por_pagina}** etiquetas (≈ {cols} columnas × {rows} filas)")
 
+# --- Botón generar ---
 col_a, col_b = st.columns([1, 2])
 with col_a:
     generar = st.button("Generar PDF")
@@ -184,6 +186,3 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
-
-
-
