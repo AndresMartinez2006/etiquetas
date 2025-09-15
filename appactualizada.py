@@ -56,7 +56,7 @@ st.caption("Usa `{SERIAL}`, `{REFERENCIA}`, `{COD_SIC}` en cualquier línea para
 textos_usuario = st.text_area("Contenido", default_text, height=220)
 lineas = [ln for ln in textos_usuario.splitlines() if ln.strip() != ""]
 
-# --- Función para generar PDF ---
+# --- Función optimizada para generar PDF con QR ---
 def generar_etiquetas_pdf(
     serial_inicio, n, serial_repeticiones, page_size,
     etiqueta_w_mm, etiqueta_h_mm, margen_x_mm, margen_y_mm,
@@ -74,9 +74,10 @@ def generar_etiquetas_pdf(
     c = canvas.Canvas(buffer, pagesize=page_size)
     width, height = page_size
 
+    # Separar letras y número del serial inicial
     match = re.match(r'(.+?)(\d+)?$', serial_inicio)
     if match:
-        letras = match.group(1) if match.group(1) else ''
+        letras = match.group(1) or ''
         numero = int(match.group(2)) if match.group(2) else None
         num_digits = len(match.group(2)) if match.group(2) else 0
     else:
@@ -84,28 +85,44 @@ def generar_etiquetas_pdf(
         numero = None
         num_digits = 0
 
+    # --- Generar QR en caché ---
+    qr_cache = {}
+    referencia_base = 320
+    cod_sic_base = 901789453
+    for i in range(n):
+        serial_actual = f"{letras}{str(numero + i).zfill(num_digits)}" if numero is not None else serial_inicio
+        referencia = f"MG-{referencia_base + i}"
+        cod_sic = str(cod_sic_base + i)
+        if incluir_qr and qr_size > 0:
+            url = f"https://bright-starlight-4b0351.netlify.app/?serial={urllib.parse.quote(serial_actual)}&referencia={urllib.parse.quote(referencia)}&cod_sic={urllib.parse.quote(cod_sic)}"
+            qr_cache[serial_actual] = qr.QrCodeWidget(url)
+
+    # --- Dibujar etiquetas ---
     x = margen_x
     y = height - etiqueta_h - margen_y
 
-    # Ejemplo: generar info de referencia y cod_sic automáticamente (puedes ajustar)
     for i in range(n):
         serial_actual = f"{letras}{str(numero + i).zfill(num_digits)}" if numero is not None else serial_inicio
-        referencia = f"MG-{320+i}"  # Ejemplo automático
-        cod_sic = f"90178945{3+i}"   # Ejemplo automático
+        referencia = f"MG-{referencia_base + i}"
+        cod_sic = str(cod_sic_base + i)
 
         for _ in range(serial_repeticiones):
             # Borde
             c.rect(x, y, etiqueta_w, etiqueta_h)
+
             # Texto
             c.setFont("Helvetica", int(font_size))
             offset = 10
-            for t in (ln.replace("{SERIAL}", serial_actual).replace("{REFERENCIA}", referencia).replace("{COD_SIC}", cod_sic) for ln in lineas):
+            for t in (ln.replace("{SERIAL}", serial_actual)
+                        .replace("{REFERENCIA}", referencia)
+                        .replace("{COD_SIC}", cod_sic)
+                        for ln in lineas):
                 c.drawString(x + padding_interno, y + etiqueta_h - offset, t)
                 offset += int(line_spacing)
+
             # QR
             if incluir_qr and qr_size > 0:
-                url = f"https://bright-starlight-4b0351.netlify.app/?serial={urllib.parse.quote(serial_actual)}&referencia={urllib.parse.quote(referencia)}&cod_sic={urllib.parse.quote(cod_sic)}"
-                qr_code = qr.QrCodeWidget(url)
+                qr_code = qr_cache[serial_actual]
                 bounds = qr_code.getBounds()
                 qr_w = bounds[2] - bounds[0]
                 qr_h = bounds[3] - bounds[1]
@@ -127,6 +144,7 @@ def generar_etiquetas_pdf(
     buffer.seek(0)
     return buffer
 
+# --- Estimación de etiquetas por página ---
 width_px, height_px = page_size
 cols = max(1, int((width_px - margen_x_mm * mm) // (etiqueta_width_mm * mm + margen_x_mm * mm)))
 rows = max(1, int((height_px - margen_y_mm * mm) // (etiqueta_height_mm * mm + margen_y_mm * mm)))
@@ -164,4 +182,3 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
-
