@@ -87,12 +87,12 @@ def generar_etiquetas_pdf(
 
     # --- Generar QR en caché ---
     qr_cache = {}
-    referencia_base = 320
-    cod_sic_base = 901789453
+    referencia_fija = "MG-320"      # 🔹 referencia fija
+    cod_sic_fijo = "901789453"      # 🔹 COD.SIC fijo
     for i in range(n):
         serial_actual = f"{letras}{str(numero + i).zfill(num_digits)}" if numero is not None else serial_inicio
-        referencia = f"MG-{referencia_base + i}"
-        cod_sic = str(cod_sic_base + i)
+        referencia = referencia_fija
+        cod_sic = cod_sic_fijo
         if incluir_qr and qr_size > 0:
             url = f"https://bright-starlight-4b0351.netlify.app/?serial={urllib.parse.quote(serial_actual)}&referencia={urllib.parse.quote(referencia)}&cod_sic={urllib.parse.quote(cod_sic)}"
             qr_cache[serial_actual] = qr.QrCodeWidget(url)
@@ -103,8 +103,8 @@ def generar_etiquetas_pdf(
 
     for i in range(n):
         serial_actual = f"{letras}{str(numero + i).zfill(num_digits)}" if numero is not None else serial_inicio
-        referencia = f"MG-{referencia_base + i}"
-        cod_sic = str(cod_sic_base + i)
+        referencia = referencia_fija
+        cod_sic = cod_sic_fijo
 
         for _ in range(serial_repeticiones):
             # Borde
