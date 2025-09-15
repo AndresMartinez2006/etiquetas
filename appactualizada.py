@@ -11,13 +11,13 @@ from reportlab.graphics.shapes import Drawing
 from reportlab.graphics import renderPDF
 
 st.set_page_config(page_title="Generador de Etiquetas PDF con QR", page_icon="🧾", layout="wide")
-st.title("🧾 Generador de etiquetas PDF con QR - 3750 stickers")
+st.title("🧾 Generador de etiquetas PDF con QR")
 
 # --- Sidebar ---
 with st.sidebar:
     st.header("⚙️ Parámetros")
     serial_inicio = st.text_input("Serial inicial (ej. MG-0001)", value="MG-0001")
-    n = st.number_input("Cantidad de seriales", min_value=1, value=3750, step=1)
+    n = st.number_input("Cantidad de seriales", min_value=1, value=5, step=1)  # por defecto pocos para probar
     serial_repeticiones = st.number_input("Repetir cada serial", min_value=1, value=1, step=1)
 
     page_label = st.selectbox("Tamaño de página", ["Letter (8.5×11 in)", "A4"])
@@ -63,15 +63,11 @@ def generar_etiquetas_pdf(serial_inicio, n, serial_repeticiones, page_size,
     c = canvas.Canvas(buffer, pagesize=page_size)
     width, height = page_size
 
-    # Separar serial inicial
     match = re.match(r'(.+?)(\d+)?$', serial_inicio)
     letras = match.group(1) if match else serial_inicio
     numero = int(match.group(2)) if match and match.group(2) else None
     num_digits = len(match.group(2)) if match and match.group(2) else 0
 
-    # Calcular filas y columnas
-    cols = max(1, int((width - margen_x) // (etiqueta_w + margen_x)))
-    rows = max(1, int((height - margen_y) // (etiqueta_h + margen_y)))
     x_start = margen_x
     y_start = height - etiqueta_h - margen_y
     x = x_start
@@ -83,9 +79,7 @@ def generar_etiquetas_pdf(serial_inicio, n, serial_repeticiones, page_size,
         cod_sic = f"901789{453+i}"
 
         for _ in range(serial_repeticiones):
-            # Borde
             c.rect(x, y, etiqueta_w, etiqueta_h)
-            # Texto
             c.setFont("Helvetica", int(font_size))
             offset = 10
             for t in lineas:
@@ -94,9 +88,8 @@ def generar_etiquetas_pdf(serial_inicio, n, serial_repeticiones, page_size,
                                  .replace("{COD_SIC}", cod_sic)
                 c.drawString(x + padding_interno, y + etiqueta_h - offset, t_reemplazado)
                 offset += int(line_spacing)
-            # QR con link único
+
             if incluir_qr and qr_size > 0:
-                # Creamos un link que al abrir genere HTML dinámico
                 link = f"https://miweb.com/etiqueta?serial={serial_actual}&referencia={referencia}&cod_sic={cod_sic}"
                 qr_code = qr.QrCodeWidget(link)
                 bounds = qr_code.getBounds()
@@ -105,7 +98,7 @@ def generar_etiquetas_pdf(serial_inicio, n, serial_repeticiones, page_size,
                 d = Drawing(qr_size, qr_size, transform=[qr_size/qr_w,0,0,qr_size/qr_h,0,0])
                 d.add(qr_code)
                 renderPDF.draw(d, c, x + etiqueta_w - qr_size - padding_interno, y + padding_interno)
-            # Avanzar posición
+
             x += etiqueta_w + margen_x
             if x + etiqueta_w > width - 1:
                 x = x_start
@@ -126,8 +119,8 @@ rows = max(1, int((height_px - margen_y_mm * mm) // (etiqueta_height_mm * mm + m
 por_pagina = cols * rows
 st.info(f"≈ {por_pagina} etiquetas por página ({cols}x{rows})")
 
-# --- Generar PDF ---
-if st.button("Generar PDF 3750 stickers"):
+# --- Botón generar PDF ---
+if st.button("Generar PDF"):
     pdf_bytes = generar_etiquetas_pdf(
         serial_inicio, n, serial_repeticiones, page_size,
         etiqueta_width_mm, etiqueta_height_mm, margen_x_mm, margen_y_mm,
@@ -138,6 +131,6 @@ if st.button("Generar PDF 3750 stickers"):
     st.download_button(
         label="⬇️ Descargar PDF",
         data=pdf_bytes,
-        file_name=f"etiquetas_3750_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+        file_name=f"etiquetas_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
         mime="application/pdf"
     )
