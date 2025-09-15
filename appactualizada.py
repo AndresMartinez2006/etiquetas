@@ -15,18 +15,18 @@ st.set_page_config(page_title="Generador de Etiquetas PDF con QR", page_icon="�
 
 st.title("🧾 Generador de etiquetas PDF con QR")
 st.write(
-    "Crea un PDF con etiquetas consecutivas (números o letras+números) y código QR. Usa `{REF}` donde quieras que aparezca la referencia."
+    "Crea un PDF con etiquetas consecutivas. Usa `{SERIAL}` donde quieras que aparezca el serial consecutivo."
 )
 
 # --- Sidebar / Parámetros ---
 with st.sidebar:
     st.header("⚙️ Parámetros")
-    ref_inicio = st.text_input(
-        "REF inicial (puede tener letras, números y el carácter '-')", 
-        value="JB-02721-BL"
+    serial_inicio = st.text_input(
+        "Serial inicial (ej. MG-0001)", 
+        value="MG-0001"
     )
-    n = st.number_input("Cantidad de REF diferentes", min_value=1, value=5, step=1)
-    ref_repeticiones = st.number_input("Repetir cada REF cuántas veces", min_value=1, value=1, step=1)
+    n = st.number_input("Cantidad de seriales diferentes", min_value=1, value=5, step=1)
+    serial_repeticiones = st.number_input("Repetir cada serial cuántas veces", min_value=1, value=1, step=1)
 
     page_label = st.selectbox("Tamaño de página", ["Letter (8.5×11 in)", "A4"])
     page_size = letter if page_label.startswith("Letter") else A4
@@ -47,28 +47,25 @@ with st.sidebar:
 
 # Texto por defecto de la etiqueta
 default_text = (
-    "IMPORTADOR:\n"
-    "EUSCORP DISTRIBUCIONES SAS\n"
-    "NIT: 901.832.828-1\n"
-    "COD. SC: 901832828\n"
-    "REF: {REF}\n"
-    "MARCA D\n"
-    "CAPELLADA: 100% SINTETICO\n"
-    "FORRO: 100% SINTETICO\n"
-    "SUELA: 100% CAUCHO\n"
-    "TALLA: 38-41   P.O. CHINA"
+    "IMPORTADOR: LIVIDNEM S.A.S.\n"
+    "NIT. 901.789.453-8\n"
+    "COD.SIC.901789453\n"
+    "REFERENCIA: MG-320\n"
+    "MARCA: SAN JOSE\n"
+    "SERIAL: {SERIAL}\n"
+    "PAIS ORIGEN CHINA"
 )
 
 st.subheader("📝 Líneas de texto de la etiqueta")
-st.caption("Usa `{REF}` en cualquier línea para insertar la referencia consecutiva.")
+st.caption("Usa `{SERIAL}` en cualquier línea para insertar el serial consecutivo.")
 textos_usuario = st.text_area("Contenido", default_text, height=220)
 lineas = [ln for ln in textos_usuario.splitlines() if ln.strip() != ""]
 
 # --- Función para generar PDF ---
 def generar_etiquetas_pdf(
-    ref_inicio: str,
+    serial_inicio: str,
     n: int,
-    ref_repeticiones: int,
+    serial_repeticiones: int,
     page_size,
     etiqueta_w_mm: float,
     etiqueta_h_mm: float,
@@ -93,13 +90,13 @@ def generar_etiquetas_pdf(
     width, height = page_size
 
     # Intentar separar dígitos finales para numeración, si existen
-    match = re.match(r'(.+?)(\d+)?$', ref_inicio)
+    match = re.match(r'(.+?)(\d+)?$', serial_inicio)
     if match:
         letras = match.group(1) if match.group(1) else ''
         numero = int(match.group(2)) if match.group(2) else None
         num_digits = len(match.group(2)) if match.group(2) else 0
     else:
-        letras = ref_inicio
+        letras = serial_inicio
         numero = None
         num_digits = 0
 
@@ -107,24 +104,24 @@ def generar_etiquetas_pdf(
     y = height - etiqueta_h - margen_y
 
     for i in range(n):
-        # Si hay números al final, los incrementamos; si no, dejamos la referencia tal cual
+        # Generar serial consecutivo
         if numero is not None:
-            ref_base = f"{letras}{str(numero + i).zfill(num_digits)}"
+            serial_actual = f"{letras}{str(numero + i).zfill(num_digits)}"
         else:
-            ref_base = ref_inicio
+            serial_actual = serial_inicio
 
-        for _ in range(ref_repeticiones):
+        for _ in range(serial_repeticiones):
             # Borde
             c.rect(x, y, etiqueta_w, etiqueta_h)
             # Texto
             c.setFont("Helvetica", int(font_size))
             offset = 10
-            for t in (ln.replace("{REF}", ref_base) for ln in lineas):
+            for t in (ln.replace("{SERIAL}", serial_actual) for ln in lineas):
                 c.drawString(x + padding_interno, y + etiqueta_h - offset, t)
                 offset += int(line_spacing)
             # QR opcional
             if incluir_qr and qr_size > 0:
-                qr_code = qr.QrCodeWidget(f"REF-{ref_base}")
+                qr_code = qr.QrCodeWidget(f"SERIAL-{serial_actual}")
                 bounds = qr_code.getBounds()
                 qr_w = bounds[2] - bounds[0]
                 qr_h = bounds[3] - bounds[1]
@@ -158,9 +155,9 @@ with col_a:
 
 if generar:
     pdf_bytes = generar_etiquetas_pdf(
-        ref_inicio=ref_inicio,
+        serial_inicio=serial_inicio,
         n=n,
-        ref_repeticiones=ref_repeticiones,
+        serial_repeticiones=serial_repeticiones,
         page_size=page_size,
         etiqueta_w_mm=etiqueta_width_mm,
         etiqueta_h_mm=etiqueta_height_mm,
