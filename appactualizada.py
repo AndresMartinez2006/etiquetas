@@ -116,12 +116,15 @@ def generar_etiquetas_pdf(
             # Texto
             c.setFont("Helvetica", int(font_size))
             offset = 10
-            for t in (ln.replace("{SERIAL}", serial_actual) for ln in lineas):
+            lineas_reemplazadas = [ln.replace("{SERIAL}", serial_actual) for ln in lineas]
+            for t in lineas_reemplazadas:
                 c.drawString(x + padding_interno, y + etiqueta_h - offset, t)
                 offset += int(line_spacing)
             # QR opcional
             if incluir_qr and qr_size > 0:
-                qr_code = qr.QrCodeWidget(f"SERIAL-{serial_actual}")
+                # Concatenar todo el contenido de la etiqueta
+                contenido_qr = "\n".join(lineas_reemplazadas)
+                qr_code = qr.QrCodeWidget(contenido_qr)
                 bounds = qr_code.getBounds()
                 qr_w = bounds[2] - bounds[0]
                 qr_h = bounds[3] - bounds[1]
@@ -179,3 +182,5 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
+
+
