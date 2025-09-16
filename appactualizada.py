@@ -5,7 +5,6 @@ import urllib.parse
 
 import streamlit as st
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib.units import mm
 from reportlab.graphics.barcode import qr
 from reportlab.graphics.shapes import Drawing
@@ -23,8 +22,10 @@ with st.sidebar:
     n = st.number_input("Cantidad de seriales diferentes", min_value=1, value=5, step=1)
     serial_repeticiones = st.number_input("Repetir cada serial cuántas veces", min_value=1, value=1, step=1)
 
-    page_label = st.selectbox("Tamaño de página", ["Letter (8.5×11 in)", "A4"])
-    page_size = letter if page_label.startswith("Letter") else A4
+    # --- Nuevo: tamaño del documento en mm ---
+    doc_width_mm = st.number_input("Ancho documento (mm)", min_value=10.0, value=210.0, step=1.0)
+    doc_height_mm = st.number_input("Alto documento (mm)", min_value=10.0, value=297.0, step=1.0)
+    page_size = (doc_width_mm * mm, doc_height_mm * mm)
 
     etiqueta_width_mm = st.number_input("Ancho etiqueta (mm)", min_value=10.0, value=70.0, step=1.0)
     etiqueta_height_mm = st.number_input("Alto etiqueta (mm)", min_value=10.0, value=50.0, step=1.0)
@@ -182,3 +183,5 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
+
+
