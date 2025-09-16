@@ -41,6 +41,10 @@ with st.sidebar:
     usar_qr = st.checkbox("Incluir código QR", value=True)
     qr_size_mm = st.number_input("Tamaño del QR (mm)", min_value=0.0, value=30.0, step=1.0, disabled=not usar_qr)
 
+    # --- NUEVO: posición del QR ---
+    qr_pos_x_mm = st.number_input("Posición X del QR (mm)", min_value=0.0, value=5.0, step=1.0, disabled=not usar_qr)
+    qr_pos_y_mm = st.number_input("Posición Y del QR (mm)", min_value=0.0, value=5.0, step=1.0, disabled=not usar_qr)
+
 # Texto por defecto de la etiqueta
 default_text = (
     "IMPORTADOR: LIVIDNEM S.A.S.\n"
@@ -62,7 +66,7 @@ def generar_etiquetas_pdf(
     serial_inicio, n, serial_repeticiones, page_size,
     etiqueta_w_mm, etiqueta_h_mm, margen_x_mm, margen_y_mm,
     lineas, font_size, line_spacing, padding_interno_mm,
-    incluir_qr, qr_size_mm
+    incluir_qr, qr_size_mm, qr_pos_x_mm, qr_pos_y_mm
 ):
     etiqueta_w = etiqueta_w_mm * mm
     etiqueta_h = etiqueta_h_mm * mm
@@ -70,6 +74,8 @@ def generar_etiquetas_pdf(
     margen_y = margen_y_mm * mm
     padding_interno = padding_interno_mm * mm
     qr_size = qr_size_mm * mm
+    qr_pos_x = qr_pos_x_mm * mm
+    qr_pos_y = qr_pos_y_mm * mm
 
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=page_size)
@@ -129,7 +135,7 @@ def generar_etiquetas_pdf(
                 qr_h = bounds[3] - bounds[1]
                 d = Drawing(qr_size, qr_size, transform=[qr_size/qr_w,0,0,qr_size/qr_h,0,0])
                 d.add(qr_code)
-                renderPDF.draw(d, c, x + etiqueta_w - qr_size - padding_interno, y + padding_interno)
+                renderPDF.draw(d, c, x + qr_pos_x, y + qr_pos_y)
 
             # Posición siguiente
             x += etiqueta_w + margen_x
@@ -173,6 +179,8 @@ if generar:
         padding_interno_mm=padding_interno_mm,
         incluir_qr=usar_qr,
         qr_size_mm=qr_size_mm,
+        qr_pos_x_mm=qr_pos_x_mm,
+        qr_pos_y_mm=qr_pos_y_mm,
     )
     st.success("PDF generado correctamente.")
     st.download_button(
@@ -183,5 +191,3 @@ if generar:
     )
 
 st.caption("Imprime al 100% de escala para respetar las medidas.")
-
-
